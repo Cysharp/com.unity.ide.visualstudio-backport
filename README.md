@@ -1,4 +1,13 @@
-# com.unity.ide.visualstudio (backport to before Unity 2019.4.21)
+# com.unity.ide.visualstudio-backport
+
+`com.unity.ide.visualstudio` supports working with Unity 2019.4.21f1 and later. We backported it for earlier versions of Unity.
+
+## Works with
+- Unity 2019.4.15f1
+
+## Install
+
+https://github.com/Cysharp/com.unity.ide.visualstudio-backport.git?path=com.unity.ide.visualstudio
 
 ## License
 ```

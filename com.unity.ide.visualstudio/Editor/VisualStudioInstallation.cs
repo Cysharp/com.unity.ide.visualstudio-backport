@@ -204,7 +204,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		public CodeEditor.Installation ToCodeEditorInstallation()
 		{
-			return new CodeEditor.Installation() { Name = Name, Path = Path };
+			return new CodeEditor.Installation() { Name = Name, Path = Path + " " /* HACK(Cysharp): Before 2019.4.21f1 */ };
 		}
 	}
 }

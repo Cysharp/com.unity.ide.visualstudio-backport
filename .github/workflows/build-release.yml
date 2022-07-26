@@ -1,0 +1,64 @@
+name: Build-Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "tag: git tag you want create. (sample 1.0.0)"
+        required: true
+      dry-run:
+        description: "dry-run: true will never create relase/nuget."
+        required: true
+        default: false
+        type: boolean
+
+env:
+  GIT_TAG: ${{ github.event.inputs.tag }}
+  DRY_RUN: ${{ github.event.inputs.dry-run }}
+
+jobs:
+  update-packagejson:
+    uses: Cysharp/Actions/.github/workflows/update-packagejson.yaml@main
+    with:
+      file-path: ./com.unity.ide.visualstudio/package.json
+      tag: ${{ github.event.inputs.tag }}
+      dry-run: ${{ fromJson(github.event.inputs.dry-run) }}
+
+  create-release:
+    if: github.event.inputs.dry-run == 'false'
+    needs: [update-packagejson]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
+      # Create Release
+      - uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.GIT_TAG }}
+          release_name: Ver.${{ env.GIT_TAG }}
+          commitish: ${{ needs.update-packagejson.outputs.sha }}
+          draft: true
+          prerelease: false
+      # Download (All) Artifacts to current directory
+      - uses: actions/download-artifact@v2
+      # Upload to NuGet
+      - run: dotnet nuget push "./nuget/*.nupkg" --skip-duplicate -s https://www.nuget.org/api/v2/package -k ${{ secrets.NUGET_KEY }}
+      # Upload to Releases(unitypackage)
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ZString.Unity.${{ env.GIT_TAG }}.unitypackage/ZString.Unity.${{ env.GIT_TAG }}.unitypackage
+          asset_name: ZString.Unity.${{ env.GIT_TAG }}.unitypackage
+          asset_content_type: application/octet-stream
+
+  cleanup:
+    if: needs.update-packagejson.outputs.is-branch-created == 'true'
+    needs: [update-packagejson]
+    uses: Cysharp/Actions/.github/workflows/clean-packagejson-branch.yaml@main
+    with:
+      branch: ${{ needs.update-packagejson.outputs.branch-name }}
